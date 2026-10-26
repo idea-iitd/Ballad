@@ -1,0 +1,25 @@
+# @package llm_clients
+# This ensures these models are loaded under 'cfg.llm_clients'
+  
+gemini_flash_lite:
+  _target_: utils.llm_clients.gemini.GeminiLLM
+  model_name: "gemini-2.5-flash-lite"
+  max_output_tokens: 8000
+  temperature: 0.99
+  max_retries: 5
+  base_backoff: 2
+  max_backoff: 60
+  num_calls: 1000
+  api_key: "[KEY]"
+  
+
+gemini_flash:
+  _target_: utils.llm_clients.gemini.GeminiLLM
+  model_name: "gemini-2.5-flash"
+  max_output_tokens: 8000
+  temperature: 0.99
+  max_retries: 5
+  base_backoff: 2
+  max_backoff: 60
+  num_calls: 1000
+  api_key: "[KEY]"

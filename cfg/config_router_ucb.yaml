@@ -1,0 +1,49 @@
+defaults:
+  - _self_
+  - llm_client@llm_clients.gemini_models: gemini
+  # - llm_client@llm_clients.gemma_api: gemma_client
+  - llm_client@llm_clients.gemma_models: gemma_vllm
+  - problem: tsp_constructive
+
+use_router: false
+active_model: "gemini_models.gemini_flash_lite"
+
+problem:
+  problem_name: "tsp_constructive"
+
+res_dir_name: results${suffix}
+log_dir_name: logs${suffix}
+resume_run_id: null
+suffix: "" #_final
+
+router:
+  # ucb | ballad
+  strategy: ballad
+
+  # --- UCB exploration coefficient ---
+  beta: 1.0
+
+  # --- Reward baseline ---
+  baseline_mode: elite_median   # "evolving" | "elite_median"
+  elite_pool_size: 5
+
+  # --- Budget (ballad only) ---
+  total_steps: 1000      # total evaluation budget T (for exploration bonus scaling)
+  min_pulls: 3           # minimum pulls per arm before scoring begins
+
+  # --- Ballad parameters ---
+  # Bootstrap Extreme Value estimator
+  n_bootstrap: 200         # number of bootstrap resamples per arm per scoring step
+  tau: 0.9                 # upper quantile applied to bootstrap batch-maxima (tail-mass estimator)
+  lam: 0.3                 # blend weight: score = (1-lam)*q_tau + lam*max_r
+                           # lam=0 → pure bootstrap quantile; lam=1 → pure running max
+  rng_seed: null           # integer seed for bootstrap RNG; null = non-deterministic
+  use_log_t: false         # true → log(t) classic UCB bonus; false → log(T) fixed-horizon bonus
+
+  # --- Lineage BFS (ballad only) ---
+  use_lineage: true      # enable evolutionary credit assignment via parent BFS
+  gamma_lineage: 0.9     # per-depth discount for lineage credit
+  D_max: 4               # max BFS depth into ancestry DAG
+  alpha_lineage: 1.0     # base lineage weight in arm score
+  alpha_decay: false     # if true, decay alpha_lineage as alpha_t = alpha * max(0, 1 - t/T)
+  window_size: 25

@@ -1,0 +1,24 @@
+# @package llm_clients
+
+gemma_3_27b:
+  _target_: utils.llm_clients.gemma_api.GemmaClient
+  model_name: "gemma-3-27b-it"
+  max_output_tokens: 8000
+  temperature: 0.99
+  max_retries: 5
+  base_backoff: 2
+  max_backoff: 60
+  num_calls: 1000
+  api_key: "[KEY]"
+
+gemma_3_12b:
+  _target_: utils.llm_clients.gemma_api.GemmaClient
+  model_name: "gemma-3-12b-it"
+  max_output_tokens: 8000
+  temperature: 0.99
+  max_retries: 5
+  base_backoff: 2
+  max_backoff: 60
+  num_calls: 1000
+  api_key: "[KEY]"
+

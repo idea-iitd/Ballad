@@ -1,0 +1,7 @@
+problem_name: bpp_online
+problem_type: constructive
+obj_type: min
+problem_size: 1k # problem size for training
+capacity: [100, 500]
+func_name: priority
+description: Solving Bin Packing Problem (BPP). BPP requires packing a set of items of various sizes into the smallest number of fixed-sized bins.
