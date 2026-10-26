@@ -1,0 +1,94 @@
+from problems.cvrp_aco.aco import ACO
+import numpy as np
+from scipy.spatial import distance_matrix
+
+
+def solve(node_positions: np.ndarray, demand: np.ndarray) -> float:
+    """
+    Solves the Capacitated Vehicle Routing Problem (CVRP) using Ant Colony Optimization (ACO).
+
+    Parameters
+    ----------
+    node_positions : np.ndarray
+        2D array of node positions of shape (n_nodes, 2).
+    demand : np.ndarray
+        1D array of length n_nodes representing demand at each node.
+
+    Returns
+    -------
+    obj : float
+        Objective value (e.g., total distance of routes).
+    """
+    N_ITERATIONS = 100
+    N_ANTS = 30
+    CAPACITY = 50
+
+    # Compute distance matrix
+    dist_mat = distance_matrix(node_positions, node_positions)
+    dist_mat[np.diag_indices_from(dist_mat)] = 1  # avoid zero distances on diagonal
+
+    # Construct heuristic information
+    heu = priority(dist_mat.copy(), node_positions.copy(), demand.copy(), CAPACITY) + 1e-9
+
+    heu[heu < 1e-9] = 1e-9  # numerical stability
+
+    # Run Ant Colony Optimization
+    aco = ACO(dist_mat, demand, heu, CAPACITY, n_ants=N_ANTS)
+    obj = aco.run(N_ITERATIONS)
+
+    return obj
+
+
+@funsearch.run
+def evaluate(node_positions: np.ndarray, demand: np.ndarray) -> float:
+    """
+    Evaluates the CVRP solution cost for given node positions and demands.
+
+    Parameters
+    ----------
+    node_positions : np.ndarray
+        2D array of node positions of shape (n_nodes, 2).
+    demand : np.ndarray
+        1D array of length n_nodes representing demand at each node.
+
+    Returns
+    -------
+    cost : float
+        Total length of the vehicle routes.
+    """
+    obj = solve(node_positions, demand)
+    return -obj
+
+
+
+@funsearch.evolve
+def priority(distance_matrix: np.ndarray, coordinates: np.ndarray, demands: np.ndarray, capacity: int) -> np.ndarray:
+  """
+  Computes prior indicators of how promising it is to include each edge in a 
+  solution for the Capacitated Vehicle Routing Problem (CVRP).
+  
+  The CVRP extends TSP by using multiple vehicles with limited capacity to serve
+  customers with known demands, minimizing total travel distance while respecting
+  capacity constraints. The depot node is indexed by 0 and serves as the starting
+  and ending point for all vehicle routes.
+  
+  Args:
+      distance_matrix : np.ndarray
+          2D array of distances between all node pairs (shape: n by n).
+      coordinates : np.ndarray
+          2D array of Euclidean coordinates of nodes (shape: n by 2).
+      demands : list or np.ndarray
+          Vector of customer demand requirements (shape: n). The depot node
+          (index 0) has demand = 0.
+      capacity : int or float
+          Integer capacity constraint representing the maximum capacity 
+          of each vehicle.
+  
+  Returns:
+      np.ndarray
+          Heuristic matrix of the same shape as the distance_matrix, where
+          entry [i, j] represents prior indicators of how promising it is
+          to move from node i to node j, considering distance, demand,
+          and capacity constraints.
+  """
+  return 1 / distance_matrix

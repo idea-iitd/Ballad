@@ -1,0 +1,96 @@
+import numpy as np
+from copy import copy
+from scipy.spatial import distance_matrix
+
+
+def solve(node_positions: np.ndarray) -> list:
+    """
+    Constructs a TSP tour using the priority heuristic.
+
+    Parameters
+    ----------
+    node_positions : np.ndarray
+        2D array of node positions of shape (problem_size, 2).
+
+    Returns
+    -------
+    tour : list[int]
+        List of node indices representing the visiting order.
+    """
+    problem_size = node_positions.shape[0]
+    dist_mat = distance_matrix(node_positions, node_positions)
+
+    start_node = 0
+    tour = [start_node]
+    unvisited = set(range(problem_size))
+    unvisited.remove(start_node)
+
+    for _ in range(problem_size - 1):
+        next_node = priority(
+            current_node=tour[-1],
+            destination_node=start_node,
+            unvisited_nodes=unvisited.copy(),
+            distance_matrix=dist_mat.copy(),
+        )
+        if next_node not in unvisited:
+            raise KeyError(f"Node {next_node} already visited.")
+
+        tour.append(next_node)
+        unvisited.remove(next_node)
+
+    return tour
+
+
+@funsearch.run
+def evaluate(node_positions: np.ndarray) -> float:
+    """
+    Evaluates the TSP tour cost for given node positions.
+
+    Parameters
+    ----------
+    node_positions : np.ndarray
+        2D array of node positions of shape (problem_size, 2).
+
+    Returns
+    -------
+    cost : float
+        Total length of the tour.
+    """
+    dist_mat = distance_matrix(node_positions, node_positions)
+    tour = solve(node_positions)
+    cost = 0.0
+    for i in range(len(tour)):
+        cost += dist_mat[tour[i], tour[(i + 1) % len(tour)]]
+    return -cost
+
+
+@funsearch.evolve
+def priority(current_node: int, destination_node: int, unvisited_nodes: set, distance_matrix: np.ndarray) -> int:
+  """
+    Selects the next node to visit in the Travelling Salesman Problem (TSP) tour.
+
+    The TSP aims to find a minimum-cost tour that visits each node exactly once
+    and returns to the starting node. This `priority` function defines a heuristic
+    for choosing the next node during the construction of the tour.
+
+    Args:
+        current_node : int
+            The index of the node currently being visited.
+        destination_node : int
+            The index of the tour's starting node (used for returning at the end of the tour).
+        unvisited_nodes : set[int]
+            The set of node indices that have not yet been visited.
+        distance_matrix : np.ndarray
+            A symmetric 2D array of shape (n, n) where entry [i, j] represents
+            the Euclidean distance between node `i` and node `j`.
+
+    Returns:
+        int
+            The index of the next node to visit, selected from `unvisited_nodes`
+            according to the heuristic used in this function.
+  """
+  scores = {}
+  for node in unvisited_nodes:
+      scores[node] = distance_matrix[current_node, node]
+  next_node = min(scores, key=scores.get)
+  return next_node

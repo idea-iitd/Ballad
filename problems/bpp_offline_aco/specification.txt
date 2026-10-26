@@ -1,0 +1,106 @@
+from problems.bpp_offline_aco.aco import ACO
+import numpy as np
+from scipy.spatial import distance_matrix
+from problems.bpp_offline_aco.gen_inst import BPPInstance
+
+def solve(inst: "BPPInstance", mode: str = 'sample') -> float:
+    """
+    Solves the Bin Packing Problem (BPP) using Ant Colony Optimization (ACO).
+
+    Parameters
+    ----------
+    inst : BPPInstance
+        Problem instance containing:
+          - n : int
+              Number of items.
+          - capacity : int
+              Capacity of each bin.
+          - demands : np.ndarray
+              1D array of item demands of shape (n,). Each entry represents 
+              the demand (or size) of an item.
+    mode : str, optional (default = 'sample')
+        Mode of execution:
+          - 'sample' : Run sampling only for a fixed number of solutions.
+          - otherwise: Run full ACO optimization.
+
+    Returns
+    -------
+    obj : float
+        Objective value (e.g., number of bins used).
+    """
+    heu = heuristics(inst.demands.copy(), inst.capacity)  # normalized in ACO
+    assert tuple(heu.shape) == (inst.n, inst.n)
+    assert 0 < heu.max() < np.inf
+
+    aco = ACO(
+        inst.demands,
+        heu.astype(float),
+        capacity=inst.capacity,
+        n_ants=N_ANTS,
+        greedy=False
+    )
+
+    if mode == 'sample':
+        obj, _ = aco.sample_only(SAMPLE_COUNT)
+    else:
+        obj, _ = aco.run(N_ITERATIONS)
+
+    return obj
+
+
+@funsearch.run
+def evaluate(inst: "BPPInstance") -> float:
+    """
+    Evaluates the BPP solution cost for a given problem instance.
+
+    Parameters
+    ----------
+    inst : BPPInstance
+        Problem instance containing:
+          - n : int
+              Number of items.
+          - capacity : int
+              Capacity of each bin.
+          - demands : np.ndarray
+              1D array of item demands of shape (n,).
+
+    Returns
+    -------
+    cost : float
+        Number of bins used.
+    """
+    obj = solve(inst, mode='sample')
+    return -obj
+
+
+
+@funsearch.evolve
+def priority(demand: np.ndarray, capacity: int) -> np.ndarray:
+  """
+  Computes a heuristic matrix that represents the relative suitability of 
+  grouping items together in the same bin for a bin packing problem.
+
+  The output is a square matrix where each entry [i, j] indicates how 
+  promising it is to place item i and item j in the same bin, considering 
+  their demand values. Pairs (i, j) whose combined demand 
+  exceeds the bin capacity should be assigned a lower heuristic score, 
+  as they cannot feasibly be placed in the same bin.
+
+  Args:
+      demand : np.ndarray
+          1D array of demand values for n items (shape: (n,)). 
+      capacity : int
+          Integer specifying the maximum capacity of each bin. This provides 
+          an upper limit that should guide which item pairs are practically 
+          feasible to be grouped together.
+
+  Returns:
+      np.ndarray
+          2D heuristic matrix of shape (n, n). 
+          Entry [i, j] signifies the prior indicator of how suitable it is 
+          to assign item i and item j to the same bin, taking demand 
+          compatibility and capacity feasibility into account.
+  """
+  return np.tile(demand/demand.max(), (demand.shape[0], 1))
+
+
